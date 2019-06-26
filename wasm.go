@@ -22,12 +22,29 @@ func main() {
 
 	db := js.Global().Get("$scope").Get("db")
 	rowCount := db.Get("RowCount")
-	println("Row count: " + rowCount.String())
+	println("Total row count: " + rowCount.String())
 	colNames := db.Get("ColNames")
 	println("ColNames: " + colNames.String())
-	bar := colNames.Length()
-	println("# of values: " + strconv.FormatInt(int64(bar), 10))
+	numNames := colNames.Length()
+	rows := db.Get("Records")
+	numRows := rows.Length()
+
+	println("# of column names: " + strconv.FormatInt(int64(numNames), 10))
+	println("# of rows: " + strconv.FormatInt(int64(numRows), 10))
+
 	for i, n := 0, colNames.Length(); i < n; i++  {
-		println("i: " + strconv.FormatInt(int64(i), 10) + " '" + colNames.Index(i).String() + "'")
+		println("Column " + strconv.FormatInt(int64(i), 10) + ": '" + colNames.Index(i).String() + "'")
+	}
+
+	row0 := rows.Index(0)
+	row0Len := row0.Length()
+	println("Length of row 0: " + strconv.FormatInt(int64(row0Len), 10))
+
+	recordSet1 := rows.Index(1)
+	recordSet1Len := recordSet1.Length()
+	println("Length of row 1: " + strconv.FormatInt(int64(recordSet1Len), 10))
+
+	for i, n := 0, row0Len; i < n; i++  {
+		println("Row 0 value " + strconv.FormatInt(int64(i), 10) + ": '" + row0.Index(i).Get("Value").String() + "'")
 	}
 }
