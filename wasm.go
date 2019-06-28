@@ -92,28 +92,30 @@ func main() {
 
 	// TODO: Determine a useful colour scheme
 
-	// Draw simple bar graph using the category data
-	i := 0
+
+	// Determine the horizontal size of the graph, and center it
+	barGap := 20
 	barWidth := 30
+	numBars := len(itemCounts)
+	horizSize := (numBars * barWidth) + ((numBars - 1) * barGap)
+	barLeft := (displayWidth - horizSize) / 2
+
+	// Draw simple bar graph using the category data
 	ctx.Set("strokeStyle", "black")
 	for _, num := range itemCounts {
 	// for label, num := range itemCounts {
-		// println(label + ": " + strconv.FormatInt(int64(num), 10))
-
-		barLeft := 100 + i * 50
+		barHeight := num * unitSize
 		ctx.Set("fillStyle", "blue")
-
 		ctx.Call("beginPath")
 		ctx.Call("moveTo", barLeft, baseLine)
 		ctx.Call("lineTo", barLeft + barWidth, baseLine)
-		barHeight := num * unitSize
 		// println("height: " + strconv.FormatInt(int64(height), 10))
 		ctx.Call("lineTo", barLeft + barWidth, baseLine - barHeight)
 		ctx.Call("lineTo", barLeft, baseLine - barHeight)
 		ctx.Call("closePath")
 		ctx.Call("fill")
 		ctx.Call("stroke")
-		i++
+		barLeft += barGap + barWidth
 	}
 
 	// TODO: Put labels on the bar graph
