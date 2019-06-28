@@ -25,6 +25,7 @@ func main() {
 	numRows := rows.Length()
 
 	// Count the number of items for each category
+	highestVal := 0
 	itemCounts := make(map[string]int)
 	var row js.Value
 	for i, n := 0, numRows; i < n; i++ {
@@ -37,23 +38,22 @@ func main() {
 		c := itemCounts[catName]
 		itemCounts[catName] = c + itemCount
 	}
-	for i, j := range itemCounts {
-		println(i + ": " + strconv.FormatInt(int64(j), 10))
+
+	// Determine the highest count value, so we can automatically size the graph to fit
+	for _, itemCount := range itemCounts {
+		if itemCount > highestVal {
+			highestVal = itemCount
+		}
 	}
 
 	// TODO: Sort the categories in some useful way
 
-	// TODO: Draw simple bar graph using the category data
-
-	// TODO: Put labels on the bar graph
-
-
-	border := float64(2)
-	gap := float64(2)
+	border := 2
+	gap := 2
 	left := border + gap
 	top := border + gap
-	displayWidth := float64(width) - border - 1
-	displayHeight := float64(height) - border - 1
+	displayWidth := width - border - 1
+	displayHeight := height - border - 1
 	// centerX := displayWidth / 2
 	// centerY := displayHeight / 2
 
@@ -64,20 +64,59 @@ func main() {
 	// Draw grid lines
 	step := math.Min(float64(width), float64(height)) / float64(30)
 	ctx.Set("strokeStyle", "rgb(220, 220, 220)")
-	for i := left; i < displayWidth-step; i += step {
+	for i := float64(left); i < float64(displayWidth)-step; i += step {
 		// Vertical dashed lines
 		ctx.Call("beginPath")
 		ctx.Call("moveTo", i+step, top)
 		ctx.Call("lineTo", i+step, displayHeight)
 		ctx.Call("stroke")
 	}
-	for i := top; i < displayHeight-step; i += step {
+	for i := float64(top); i < float64(displayHeight)-step; i += step {
 		// Horizontal dashed lines
 		ctx.Call("beginPath")
 		ctx.Call("moveTo", left, i+step)
 		ctx.Call("lineTo", displayWidth-border, i+step)
 		ctx.Call("stroke")
 	}
+
+	// Determine the vertical size of the graph, and center it
+	// println("top: " + strconv.FormatInt(int64(top), 10))
+	// println("highestVal: " + strconv.FormatInt(int64(highestVal), 10))
+	unitSize := 3
+	// println("unitSize: " + strconv.FormatInt(int64(unitSize), 10))
+	vertSize := highestVal * unitSize
+	// println("vertSize: " + strconv.FormatInt(int64(vertSize), 10))
+	baseLine := displayHeight - ((displayHeight - vertSize) / 2)
+	// println("baseLine: " + strconv.FormatInt(int64(baseLine), 10))
+	// println("displayHeight: " + strconv.FormatInt(int64(displayHeight), 10))
+
+	// TODO: Determine a useful colour scheme
+
+	// Draw simple bar graph using the category data
+	i := 0
+	barWidth := 30
+	ctx.Set("strokeStyle", "black")
+	for _, num := range itemCounts {
+	// for label, num := range itemCounts {
+		// println(label + ": " + strconv.FormatInt(int64(num), 10))
+
+		barLeft := 100 + i * 50
+		ctx.Set("fillStyle", "blue")
+
+		ctx.Call("beginPath")
+		ctx.Call("moveTo", barLeft, baseLine)
+		ctx.Call("lineTo", barLeft + barWidth, baseLine)
+		barHeight := num * unitSize
+		// println("height: " + strconv.FormatInt(int64(height), 10))
+		ctx.Call("lineTo", barLeft + barWidth, baseLine - barHeight)
+		ctx.Call("lineTo", barLeft, baseLine - barHeight)
+		ctx.Call("closePath")
+		ctx.Call("fill")
+		ctx.Call("stroke")
+		i++
+	}
+
+	// TODO: Put labels on the bar graph
 
 	// Draw a border around the graph area
 	ctx.Set("lineWidth", "2")
