@@ -7,10 +7,12 @@ import (
 	"strings"
 )
 
-const dir = "./docs"
+const (
+	dir  = "./docs"
+	port = 8080
+)
 
 func main() {
-	port := 8080
 	fs := http.FileServer(http.Dir(dir))
 	log.Printf("Serving %s on http://localhost:%d", dir, port)
 	http.ListenAndServe(fmt.Sprintf(":%d", port), http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
