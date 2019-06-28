@@ -98,6 +98,7 @@ func main() {
 	// Draw simple bar graph using the category data
 	textGap := 5
 	textSize := 20
+	axisThickness := 5
 	ctx.Set("strokeStyle", "black")
 	ctx.Set("font", "bold "+strconv.FormatInt(int64(textSize), 10)+"px serif")
 	rand.Seed(int64(time.Now().Nanosecond()))
@@ -121,11 +122,18 @@ func main() {
 		textMet := ctx.Call("measureText", label)
 		textWidth := textMet.Get("width").Float()
 		textLeft := (float64(barWidth) - textWidth) / 2
-		ctx.Call("fillText", label, barLeft+int(textLeft), baseLine+textSize+textGap)
+		ctx.Call("fillText", label, barLeft+int(textLeft), baseLine+textSize+textGap+axisThickness+textGap)
 		barLeft += barGap + barWidth
 	}
 
 	// TODO: Draw axis
+	barLeft = ((graphBorder * 2) + barGap) / 2
+	ctx.Set("lineWidth", axisThickness)
+	ctx.Call("beginPath")
+	ctx.Call("moveTo", graphBorder+horizSize, baseLine+axisThickness+textGap)
+	ctx.Call("lineTo", barLeft-axisThickness-textGap, baseLine+axisThickness+textGap)
+	ctx.Call("lineTo", barLeft-axisThickness-textGap, baseLine-int(float64(vertSize)*1.2))
+	ctx.Call("stroke")
 
 	// TODO: Add caption
 
