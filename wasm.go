@@ -54,8 +54,6 @@ func main() {
 	top := border + gap
 	displayWidth := width - border - 1
 	displayHeight := height - border - 1
-	// centerX := displayWidth / 2
-	// centerY := displayHeight / 2
 
 	// Clear the background
 	ctx.Set("fillStyle", "white")
@@ -79,46 +77,57 @@ func main() {
 		ctx.Call("stroke")
 	}
 
-	// Determine the vertical size of the graph, and center it
-	// println("top: " + strconv.FormatInt(int64(top), 10))
-	// println("highestVal: " + strconv.FormatInt(int64(highestVal), 10))
+	// Determine the vertical size and center position of the graph
 	unitSize := 3
-	// println("unitSize: " + strconv.FormatInt(int64(unitSize), 10))
 	vertSize := highestVal * unitSize
-	// println("vertSize: " + strconv.FormatInt(int64(vertSize), 10))
 	baseLine := displayHeight - ((displayHeight - vertSize) / 2)
-	// println("baseLine: " + strconv.FormatInt(int64(baseLine), 10))
-	// println("displayHeight: " + strconv.FormatInt(int64(displayHeight), 10))
 
 	// TODO: Determine a useful colour scheme
 
-
-	// Determine the horizontal size of the graph, and center it
-	barGap := 20
-	barWidth := 30
+	// Calculate the bar size, gap, and centering based upon the number of bars
+	graphBorder := 50
 	numBars := len(itemCounts)
-	horizSize := (numBars * barWidth) + ((numBars - 1) * barGap)
-	barLeft := (displayWidth - horizSize) / 2
+	horizSize := displayWidth - (graphBorder * 2)
+	b := float64(horizSize) / float64(numBars)
+	barWidth := int(math.Round(b * 0.6))
+	barGap := int(b - float64(barWidth))
+	barLeft := ((graphBorder * 2) + barGap) / 2
 
 	// Draw simple bar graph using the category data
+	textGap := 5
+	textSize := 20
 	ctx.Set("strokeStyle", "black")
-	for _, num := range itemCounts {
-	// for label, num := range itemCounts {
+	ctx.Set("font", "bold "+strconv.FormatInt(int64(textSize), 10)+"px serif")
+	for label, num := range itemCounts {
 		barHeight := num * unitSize
 		ctx.Set("fillStyle", "blue")
 		ctx.Call("beginPath")
 		ctx.Call("moveTo", barLeft, baseLine)
-		ctx.Call("lineTo", barLeft + barWidth, baseLine)
-		// println("height: " + strconv.FormatInt(int64(height), 10))
-		ctx.Call("lineTo", barLeft + barWidth, baseLine - barHeight)
-		ctx.Call("lineTo", barLeft, baseLine - barHeight)
+		ctx.Call("lineTo", barLeft+barWidth, baseLine)
+		ctx.Call("lineTo", barLeft+barWidth, baseLine-barHeight)
+		ctx.Call("lineTo", barLeft, baseLine-barHeight)
 		ctx.Call("closePath")
 		ctx.Call("fill")
 		ctx.Call("stroke")
+		ctx.Set("fillStyle", "black")
+
+		// Draw the bar label horizontally centered
+		textMet := ctx.Call("measureText", label)
+		textWidth := textMet.Get("width").Float()
+		textLeft := (float64(barWidth) - textWidth) / 2
+		ctx.Call("fillText", label, barLeft+int(textLeft), baseLine+textSize+textGap)
 		barLeft += barGap + barWidth
 	}
 
-	// TODO: Put labels on the bar graph
+	// TODO: Draw axis
+
+	// TODO: Add caption
+
+	// TODO: Add axis labels
+
+	// TODO: Add units of measurement
+
+	// TODO: Adjust the grid lines to work with the unit of measurement
 
 	// Draw a border around the graph area
 	ctx.Set("lineWidth", "2")
