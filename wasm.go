@@ -2,9 +2,13 @@ package main
 
 import (
 	"math"
+	"math/rand"
 	"strconv"
 	"syscall/js"
+	"time"
 )
+
+const goldenRatioConjugate = 0.618033988749895
 
 var (
 	canvasEl, ctx, doc js.Value
@@ -82,8 +86,6 @@ func main() {
 	vertSize := highestVal * unitSize
 	baseLine := displayHeight - ((displayHeight - vertSize) / 2)
 
-	// TODO: Determine a useful colour scheme
-
 	// Calculate the bar size, gap, and centering based upon the number of bars
 	graphBorder := 50
 	numBars := len(itemCounts)
@@ -98,9 +100,13 @@ func main() {
 	textSize := 20
 	ctx.Set("strokeStyle", "black")
 	ctx.Set("font", "bold "+strconv.FormatInt(int64(textSize), 10)+"px serif")
+	rand.Seed(int64(time.Now().Nanosecond()))
+	hue := rand.Float64()
 	for label, num := range itemCounts {
 		barHeight := num * unitSize
-		ctx.Set("fillStyle", "blue")
+		hue += goldenRatioConjugate
+		hue = math.Mod(hue, 1)
+		ctx.Set("fillStyle", hsvToRgb(hue, 0.5, 0.95))
 		ctx.Call("beginPath")
 		ctx.Call("moveTo", barLeft, baseLine)
 		ctx.Call("lineTo", barLeft+barWidth, baseLine)
@@ -148,4 +154,39 @@ func main() {
 	ctx.Call("lineTo", border, displayHeight)
 	ctx.Call("closePath")
 	ctx.Call("stroke")
+}
+
+// Ported from the JS here: https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
+func hsvToRgb(h, s, v float64) string {
+	hi := math.Round(h * 6)
+	f := h*6 - hi
+	p := v * (1 - s)
+	q := v * (1 - f*s)
+	t := v * (1 - (1-f)*s)
+
+	hiInt := int(hi)
+	var r, g, b float64
+	if hiInt == 0 {
+		r, g, b = v, t, p
+	}
+	if hiInt == 1 {
+		r, g, b = q, v, p
+	}
+	if hiInt == 2 {
+		r, g, b = p, v, t
+	}
+	if hiInt == 3 {
+		r, g, b = p, q, v
+	}
+	if hiInt == 4 {
+		r, g, b = t, p, v
+	}
+	if hiInt == 5 {
+		r, g, b = v, p, q
+	}
+
+	red := int(math.Round(r * 256))
+	green := int(math.Round(g * 256))
+	blue := int(math.Round(b * 256))
+	return "rgb(" + strconv.FormatInt(int64(red), 10) + ", " + strconv.FormatInt(int64(green), 10) + ", " + strconv.FormatInt(int64(blue), 10) + ")"
 }
