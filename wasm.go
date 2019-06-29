@@ -130,9 +130,11 @@ func main() {
 	barLeft = ((graphBorder * 2) + barGap) / 2
 	ctx.Set("lineWidth", axisThickness)
 	ctx.Call("beginPath")
-	ctx.Call("moveTo", graphBorder+horizSize, baseLine+axisThickness+textGap)
-	ctx.Call("lineTo", barLeft-axisThickness-textGap, baseLine+axisThickness+textGap)
-	ctx.Call("lineTo", barLeft-axisThickness-textGap, baseLine-int(float64(vertSize)*1.2))
+	y1 := baseLine+axisThickness+textGap
+	ctx.Call("moveTo", graphBorder+horizSize, y1)
+	ctx.Call("lineTo", barLeft-axisThickness-textGap, y1)
+	y2 := baseLine-int(float64(vertSize)*1.2)
+	ctx.Call("lineTo", barLeft-axisThickness-textGap, y2)
 	ctx.Call("stroke")
 
 	// Add title
@@ -144,7 +146,21 @@ func main() {
 	titleLeft := (displayWidth - int(titleWidth)) / 2
 	ctx.Call("fillText", title, titleLeft, top+titleFontSize+20)
 
-	// TODO: Add axis labels
+	// Add Y axis label
+	// Info on how to rotate text on the canvas:
+	//   https://newspaint.wordpress.com/2014/05/22/writing-rotated-text-on-a-javascript-canvas/
+	spinX := displayWidth / 2
+	spinY := displayHeight / 2
+	xLabel := "left-aligned 90 deg"
+	xLabelFontSize := 16
+	ctx.Call("save")
+	ctx.Call("translate", spinX, spinY)
+	ctx.Call("rotate", 3 * math.Pi / 2)
+	ctx.Set("font", "bold "+strconv.FormatInt(int64(xLabelFontSize), 10)+"px serif")
+	ctx.Set("fillStyle", "black")
+	ctx.Set("textAlign", "left")
+	ctx.Call("fillText", xLabel, 0, -spinX+barLeft-axisThickness-textGap-int(xLabelFontSize))
+	ctx.Call("restore")
 
 	// TODO: Add units of measurement
 
