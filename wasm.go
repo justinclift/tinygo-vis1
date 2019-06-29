@@ -130,11 +130,11 @@ func main() {
 	barLeft = ((graphBorder * 2) + barGap) / 2
 	ctx.Set("lineWidth", axisThickness)
 	ctx.Call("beginPath")
-	y1 := baseLine+axisThickness+textGap
-	ctx.Call("moveTo", graphBorder+horizSize, y1)
-	ctx.Call("lineTo", barLeft-axisThickness-textGap, y1)
-	y2 := baseLine-int(float64(vertSize)*1.2)
-	ctx.Call("lineTo", barLeft-axisThickness-textGap, y2)
+	yBase := baseLine + axisThickness + textGap
+	ctx.Call("moveTo", graphBorder+horizSize, yBase)
+	ctx.Call("lineTo", barLeft-axisThickness-textGap, yBase)
+	yTop := baseLine - int(float64(vertSize)*1.2)
+	ctx.Call("lineTo", barLeft-axisThickness-textGap, yTop)
 	ctx.Call("stroke")
 
 	// Add title
@@ -150,12 +150,12 @@ func main() {
 	// Info on how to rotate text on the canvas:
 	//   https://newspaint.wordpress.com/2014/05/22/writing-rotated-text-on-a-javascript-canvas/
 	spinX := displayWidth / 2
-	spinY := displayHeight / 2
+	spinY := yTop + ((yBase - yTop) / 2) + 50 // TODO: Figure out why 50 works well here, then autocalculate it for other graphs
 	xLabel := "left-aligned 90 deg"
 	xLabelFontSize := 16
 	ctx.Call("save")
 	ctx.Call("translate", spinX, spinY)
-	ctx.Call("rotate", 3 * math.Pi / 2)
+	ctx.Call("rotate", 3*math.Pi/2)
 	ctx.Set("font", "bold "+strconv.FormatInt(int64(xLabelFontSize), 10)+"px serif")
 	ctx.Set("fillStyle", "black")
 	ctx.Set("textAlign", "left")
