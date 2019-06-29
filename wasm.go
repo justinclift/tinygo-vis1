@@ -56,8 +56,11 @@ func main() {
 	gap := 2
 	graphBorder := 50
 	textGap := 5
-	textSize := 20
+	titleFontSize := 25
 	unitSize := 3
+	xCountFontSize := 18
+	xLabelFontSize := 20
+	yAxisCaptionFontSize := 16
 	top := border + gap
 	displayWidth := width - border - 1
 	displayHeight := height - border - 1
@@ -97,21 +100,21 @@ func main() {
 	ctx.Set("strokeStyle", "rgb(220, 220, 220)")
 	for i := float64(yBase); i >= float64(yTop); i -= float64(yUnitStep) {
 		ctx.Call("beginPath")
-		ctx.Call("moveTo", axisLeft, i)
-		// ctx.Call("moveTo", barLeft, i)
+		ctx.Call("moveTo", axisLeft-axisThickness-textGap, i)
 		ctx.Call("lineTo", axisRight, i)
 		ctx.Call("stroke")
 	}
 
 	// Draw simple bar graph using the category data
 	ctx.Set("strokeStyle", "black")
-	ctx.Set("font", "bold "+strconv.FormatInt(int64(textSize), 10)+"px serif")
+
 	rand.Seed(int64(time.Now().Nanosecond()))
 	hue := rand.Float64()
 	for label, num := range itemCounts {
 		barHeight := num * unitSize
 		hue += goldenRatioConjugate
 		hue = math.Mod(hue, 1)
+		ctx.Set("font", "bold "+strconv.FormatInt(int64(xLabelFontSize), 10)+"px serif")
 		ctx.Set("fillStyle", hsvToRgb(hue, 0.5, 0.95))
 		ctx.Call("beginPath")
 		ctx.Call("moveTo", barLeft, baseLine)
@@ -127,11 +130,10 @@ func main() {
 		textMet := ctx.Call("measureText", label)
 		textWidth := textMet.Get("width").Float()
 		textLeft := (float64(barWidth) - textWidth) / 2
-		ctx.Call("fillText", label, barLeft+int(textLeft), baseLine+textSize+textGap+axisThickness+textGap)
+		ctx.Call("fillText", label, barLeft+int(textLeft), baseLine+xLabelFontSize+textGap+axisThickness+textGap)
 
 		// Draw the item count centered above the top of the bar
-		textSize = 18
-		ctx.Set("font", strconv.FormatInt(int64(textSize), 10)+"px serif")
+		ctx.Set("font", strconv.FormatInt(int64(xCountFontSize), 10)+"px serif")
 		s := strconv.FormatInt(int64(num), 10)
 		textMet = ctx.Call("measureText", s)
 		textWidth = textMet.Get("width").Float()
@@ -150,7 +152,6 @@ func main() {
 
 	// Add title
 	title := "Marine Litter Survey - Keep Northern Ireland Beautiful"
-	titleFontSize := 25
 	ctx.Set("font", "bold "+strconv.FormatInt(int64(titleFontSize), 10)+"px serif")
 	titleMet := ctx.Call("measureText", title)
 	titleWidth := titleMet.Get("width").Float()
@@ -162,15 +163,14 @@ func main() {
 	//   https://newspaint.wordpress.com/2014/05/22/writing-rotated-text-on-a-javascript-canvas/
 	spinX := displayWidth / 2
 	spinY := yTop + ((yBase - yTop) / 2) + 50 // TODO: Figure out why 50 works well here, then autocalculate it for other graphs
-	xLabel := "left-aligned 90 deg"
-	xLabelFontSize := 16
+	yAxisCaption := "Number of items"
 	ctx.Call("save")
 	ctx.Call("translate", spinX, spinY)
 	ctx.Call("rotate", 3*math.Pi/2)
-	ctx.Set("font", "bold "+strconv.FormatInt(int64(xLabelFontSize), 10)+"px serif")
+	ctx.Set("font", "bold "+strconv.FormatInt(int64(yAxisCaptionFontSize), 10)+"px serif")
 	ctx.Set("fillStyle", "black")
 	ctx.Set("textAlign", "left")
-	ctx.Call("fillText", xLabel, 0, -spinX+axisLeft-axisThickness-textGap-int(xLabelFontSize))
+	ctx.Call("fillText", yAxisCaption, 0, -spinX+axisLeft-axisThickness-textGap-int(yAxisCaptionFontSize))
 	ctx.Call("restore")
 
 	// TODO: Add units of measurement
