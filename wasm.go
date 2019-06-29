@@ -138,10 +138,11 @@ func main() {
 	// Add title
 	title := "Marine Litter Survey - Keep Northern Ireland Beautiful"
 	titleFontSize := 25
+	ctx.Set("font", "bold "+strconv.FormatInt(int64(titleFontSize), 10)+"px serif")
 	titleMet := ctx.Call("measureText", title)
 	titleWidth := titleMet.Get("width").Float()
-	ctx.Set("font", "bold "+strconv.FormatInt(int64(titleFontSize), 10)+"px serif")
-	ctx.Call("fillText", title, (displayWidth-int(titleWidth))/2, top+titleFontSize+20)
+	titleLeft := (displayWidth - int(titleWidth)) / 2
+	ctx.Call("fillText", title, titleLeft, top+titleFontSize+20)
 
 	// TODO: Add axis labels
 
