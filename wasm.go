@@ -50,55 +50,60 @@ func main() {
 		}
 	}
 
-	// TODO: Sort the categories in some useful way
-
+	// Calculate the values used for controlling the graph positioning and display
+	axisThickness := 5
 	border := 2
 	gap := 2
-	left := border + gap
+	graphBorder := 50
+	textGap := 5
+	textSize := 20
+	unitSize := 3
 	top := border + gap
 	displayWidth := width - border - 1
 	displayHeight := height - border - 1
-
-	// Clear the background
-	ctx.Set("fillStyle", "white")
-	ctx.Call("fillRect", 0, 0, width, height)
-
-	// Draw grid lines
-	step := math.Min(float64(width), float64(height)) / float64(30)
-	ctx.Set("strokeStyle", "rgb(220, 220, 220)")
-	for i := float64(left); i < float64(displayWidth)-step; i += step {
-		// Vertical dashed lines
-		ctx.Call("beginPath")
-		ctx.Call("moveTo", i+step, top)
-		ctx.Call("lineTo", i+step, displayHeight)
-		ctx.Call("stroke")
-	}
-	for i := float64(top); i < float64(displayHeight)-step; i += step {
-		// Horizontal dashed lines
-		ctx.Call("beginPath")
-		ctx.Call("moveTo", left, i+step)
-		ctx.Call("lineTo", displayWidth-border, i+step)
-		ctx.Call("stroke")
-	}
-
-	// Determine the vertical size and center position of the graph
-	unitSize := 3
 	vertSize := highestVal * unitSize
 	baseLine := displayHeight - ((displayHeight - vertSize) / 2)
+	yBase := baseLine + axisThickness + textGap
+	yTop := baseLine - int(float64(vertSize)*1.2)
+	yLength := yBase - yTop
 
 	// Calculate the bar size, gap, and centering based upon the number of bars
-	graphBorder := 50
 	numBars := len(itemCounts)
 	horizSize := displayWidth - (graphBorder * 2)
 	b := float64(horizSize) / float64(numBars)
 	barWidth := int(math.Round(b * 0.6))
 	barGap := int(b - float64(barWidth))
 	barLeft := ((graphBorder * 2) + barGap) / 2
+	axisLeft := ((graphBorder * 2) + barGap) / 2
+	axisRight := axisLeft + (numBars * barWidth) + ((numBars - 1) * barGap) + axisThickness + textGap
+
+	// Calculate the y axis units of measurement
+	yMax, yStep := axisMax(highestVal)
+	yUnit := yLength / yMax
+	yUnitStep := yUnit * yStep
+
+	// println("highestVal: "+strconv.FormatInt(int64(highestVal), 10))
+	// println("yMax: "+strconv.FormatInt(int64(yMax), 10))
+	// println("yStep: "+strconv.FormatInt(int64(yStep), 10))
+	// println("yUnitStep: "+strconv.FormatInt(int64(yUnitStep), 10))
+
+	// TODO: Sort the categories in some useful way
+
+	// Clear the background
+	ctx.Set("fillStyle", "white")
+	ctx.Call("fillRect", 0, 0, width, height)
+
+	// Draw y axis marker lines
+	ctx.Set("strokeStyle", "rgb(220, 220, 220)")
+	for i := float64(yBase); i >= float64(yTop); i -= float64(yUnitStep) {
+		ctx.Call("beginPath")
+		ctx.Call("moveTo", axisLeft, i)
+		// ctx.Call("moveTo", barLeft, i)
+		ctx.Call("lineTo", axisRight, i)
+		ctx.Call("stroke")
+	}
 
 	// Draw simple bar graph using the category data
-	textGap := 5
-	textSize := 20
-	axisThickness := 5
 	ctx.Set("strokeStyle", "black")
 	ctx.Set("font", "bold "+strconv.FormatInt(int64(textSize), 10)+"px serif")
 	rand.Seed(int64(time.Now().Nanosecond()))
@@ -123,18 +128,24 @@ func main() {
 		textWidth := textMet.Get("width").Float()
 		textLeft := (float64(barWidth) - textWidth) / 2
 		ctx.Call("fillText", label, barLeft+int(textLeft), baseLine+textSize+textGap+axisThickness+textGap)
+
+		// Draw the item count centered above the top of the bar
+		textSize = 18
+		ctx.Set("font", strconv.FormatInt(int64(textSize), 10)+"px serif")
+		s := strconv.FormatInt(int64(num), 10)
+		textMet = ctx.Call("measureText", s)
+		textWidth = textMet.Get("width").Float()
+		textLeft = (float64(barWidth) - textWidth) / 2
+		ctx.Call("fillText", s, barLeft+int(textLeft), baseLine-barHeight-textGap)
 		barLeft += barGap + barWidth
 	}
 
-	// TODO: Draw axis
-	barLeft = ((graphBorder * 2) + barGap) / 2
+	// Draw axis
 	ctx.Set("lineWidth", axisThickness)
 	ctx.Call("beginPath")
-	yBase := baseLine + axisThickness + textGap
-	ctx.Call("moveTo", graphBorder+horizSize, yBase)
-	ctx.Call("lineTo", barLeft-axisThickness-textGap, yBase)
-	yTop := baseLine - int(float64(vertSize)*1.2)
-	ctx.Call("lineTo", barLeft-axisThickness-textGap, yTop)
+	ctx.Call("moveTo", axisRight, yBase)
+	ctx.Call("lineTo", axisLeft-axisThickness-textGap, yBase)
+	ctx.Call("lineTo", axisLeft-axisThickness-textGap, yTop)
 	ctx.Call("stroke")
 
 	// Add title
@@ -159,7 +170,7 @@ func main() {
 	ctx.Set("font", "bold "+strconv.FormatInt(int64(xLabelFontSize), 10)+"px serif")
 	ctx.Set("fillStyle", "black")
 	ctx.Set("textAlign", "left")
-	ctx.Call("fillText", xLabel, 0, -spinX+barLeft-axisThickness-textGap-int(xLabelFontSize))
+	ctx.Call("fillText", xLabel, 0, -spinX+axisLeft-axisThickness-textGap-int(xLabelFontSize))
 	ctx.Call("restore")
 
 	// TODO: Add units of measurement
@@ -220,4 +231,24 @@ func hsvToRgb(h, s, v float64) string {
 	green := int(math.Round(g * 256))
 	blue := int(math.Round(b * 256))
 	return "rgb(" + strconv.FormatInt(int64(red), 10) + ", " + strconv.FormatInt(int64(green), 10) + ", " + strconv.FormatInt(int64(blue), 10) + ")"
+}
+
+// axisMax calculates the maximum value for a given axis, and the step value to use when drawing its grid lines
+func axisMax(val int) (int, int) {
+	if val < 10 {
+		return 10, 1
+	}
+
+	// If val is less than 100, return val rounded up to the next 10
+	if val < 100 {
+		x := val % 10
+		return val + 10 - x, 10
+	}
+
+	// If val is less than 500, return val rounded up to the next 50
+	if val < 500 {
+		x := val % 50
+		return val + 50 - x, 50
+	}
+	return 1000, 100
 }
