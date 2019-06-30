@@ -3,30 +3,24 @@
 const WASM_URL = 'wasm.wasm';
 
 var wasm;
+var palette = 0.6;
 
-// // Pass mouse wheel events through to its wasm handler
-// function wheelHandler(evt) {
-//     wasm.exports.wheelHandler(evt.deltaY);
-// }
-
+// Handle browser resize events
+function resizeEvent() {
+  wasm.exports.DrawBarChart(palette);
+}
 
 function init() {
+  window.onresize = resizeEvent; // Redraw the bar chart when the window is resized
+
+  // Load and run the wasm
   const go = new Go();
   if ('instantiateStreaming' in WebAssembly) {
     WebAssembly.instantiateStreaming(fetch(WASM_URL), go.importObject).then(function (obj) {
       wasm = obj.instance;
-      go.run(wasm);
+      go.run(wasm); // Initial setup
 
-      // Set up wasm event handlers
-      // document.getElementById("mycanvas").addEventListener("mousedown", clickHandler);
-      // document.getElementById("mycanvas").addEventListener("keydown", keyPressHandler);
-      // document.getElementById("mycanvas").addEventListener("mousemove", moveHandler);
-      // document.getElementById("mycanvas").addEventListener("wheel", wheelHandler);
-      //
-      // Set up basic render loop
-      // setInterval(function() {
-      //     applyTransformation();
-      // },25);
+      wasm.exports.DrawBarChart(palette);
     })
   } else {
     fetch(WASM_URL).then(resp =>
@@ -36,16 +30,7 @@ function init() {
         wasm = obj.instance;
         go.run(wasm);
 
-        // // Set up wasm event handlers
-        // document.getElementById("mycanvas").addEventListener("mousedown", clickHandler);
-        // document.getElementById("mycanvas").addEventListener("keydown", keyPressHandler);
-        // document.getElementById("mycanvas").addEventListener("mousemove", moveHandler);
-        // document.getElementById("mycanvas").addEventListener("wheel", wheelHandler);
-
-        // // Set up basic render loop
-        // setInterval(function() {
-        //     applyTransformation();
-        // },25);
+        wasm.exports.DrawBarChart(palette);
       })
     )
   }

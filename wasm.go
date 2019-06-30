@@ -2,27 +2,25 @@ package main
 
 import (
 	"math"
-	"math/rand"
 	"strconv"
 	"syscall/js"
-	"time"
 )
 
 const goldenRatioConjugate = 0.618033988749895
 
-var (
-	canvasEl, ctx, doc js.Value
-)
+func main() {}
 
-func main() {
+// DrawBarChart draws a simple bar chart, with a colour palette generated from the provided seed value
+//go:export DrawBarChart
+func DrawBarChart(palette float32) {
 	width := js.Global().Get("innerWidth").Int()
 	height := js.Global().Get("innerHeight").Int()
-	doc = js.Global().Get("document")
-	canvasEl = doc.Call("getElementById", "mycanvas")
+	doc := js.Global().Get("document")
+	canvasEl := doc.Call("getElementById", "mycanvas")
 	canvasEl.Call("setAttribute", "width", width)
 	canvasEl.Call("setAttribute", "height", height)
 	canvasEl.Set("tabIndex", 0) // Not sure if this is needed
-	ctx = canvasEl.Call("getContext", "2d")
+	ctx := canvasEl.Call("getContext", "2d")
 
 	db := js.Global().Get("$scope").Get("db")
 	rows := db.Get("Records")
@@ -42,8 +40,6 @@ func main() {
 		c := itemCounts[catName]
 		itemCounts[catName] = c + itemCount
 	}
-
-	// TODO: Detect the browser being resized, and redraw the graph accordingly
 
 	// Determine the highest count value, so we can automatically size the graph to fit
 	for _, itemCount := range itemCounts {
@@ -113,10 +109,9 @@ func main() {
 	}
 
 	// Draw simple bar graph using the category data
+	hue := float64(palette)
 	ctx.Set("strokeStyle", "black")
 	ctx.Set("textAlign", "center")
-	rand.Seed(int64(time.Now().Nanosecond()))
-	hue := rand.Float64()
 	for label, num := range itemCounts {
 		barHeight := num * unitSize
 		hue += goldenRatioConjugate
