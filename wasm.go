@@ -43,6 +43,8 @@ func main() {
 		itemCounts[catName] = c + itemCount
 	}
 
+	// TODO: Detect the browser being resized, and redraw the graph accordingly
+
 	// Determine the highest count value, so we can automatically size the graph to fit
 	for _, itemCount := range itemCounts {
 		if itemCount > highestVal {
@@ -86,11 +88,6 @@ func main() {
 	yUnit := yLength / yMax
 	yUnitStep := yUnit * yStep
 
-	// println("highestVal: "+strconv.FormatInt(int64(highestVal), 10))
-	// println("yMax: "+strconv.FormatInt(int64(yMax), 10))
-	// println("yStep: "+strconv.FormatInt(int64(yStep), 10))
-	// println("yUnitStep: "+strconv.FormatInt(int64(yUnitStep), 10))
-
 	// TODO: Sort the categories in some useful way
 
 	// Clear the background
@@ -98,20 +95,28 @@ func main() {
 	ctx.Call("fillRect", 0, 0, width, height)
 
 	// Draw y axis marker lines
+	yMarkerFontSize := 12
+	yMarkerLeft := axisLeft - axisThickness - textGap - 5
 	ctx.Set("strokeStyle", "rgb(220, 220, 220)")
+	ctx.Set("fillStyle", "black")
+	ctx.Set("font", strconv.FormatInt(int64(yMarkerFontSize), 10)+"px serif")
+	ctx.Set("textAlign", "right")
 	for i := float64(yBase); i >= float64(yTop); i -= float64(yUnitStep) {
+		markerLabel := strconv.FormatInt(int64((float64(yBase)-i)/float64(yUnit)), 10)
+		markerMet := ctx.Call("measureText", markerLabel)
+		yMarkerWidth := int(markerMet.Get("width").Float())
 		ctx.Call("beginPath")
-		ctx.Call("moveTo", axisLeft-axisThickness-textGap, i)
+		ctx.Call("moveTo", yMarkerLeft-yMarkerWidth, i)
 		ctx.Call("lineTo", axisRight, i)
 		ctx.Call("stroke")
+		ctx.Call("fillText", markerLabel, axisLeft-15, i-4)
 	}
 
 	// Draw simple bar graph using the category data
 	ctx.Set("strokeStyle", "black")
-
+	ctx.Set("textAlign", "center")
 	rand.Seed(int64(time.Now().Nanosecond()))
 	hue := rand.Float64()
-
 	for label, num := range itemCounts {
 		barHeight := num * unitSize
 		hue += goldenRatioConjugate
@@ -129,17 +134,13 @@ func main() {
 		ctx.Set("fillStyle", "black")
 
 		// Draw the bar label horizontally centered
-		textMet := ctx.Call("measureText", label)
-		textWidth := textMet.Get("width").Float()
-		textLeft := (float64(barWidth) - textWidth) / 2
+		textLeft := float64(barWidth) / 2
 		ctx.Call("fillText", label, barLeft+int(textLeft), barLabelY)
 
 		// Draw the item count centered above the top of the bar
 		ctx.Set("font", strconv.FormatInt(int64(xCountFontSize), 10)+"px serif")
 		s := strconv.FormatInt(int64(num), 10)
-		textMet = ctx.Call("measureText", s)
-		textWidth = textMet.Get("width").Float()
-		textLeft = (float64(barWidth) - textWidth) / 2
+		textLeft = float64(barWidth) / 2
 		ctx.Call("fillText", s, barLeft+int(textLeft), baseLine-barHeight-textGap)
 		barLeft += barGap + barWidth
 	}
@@ -155,9 +156,8 @@ func main() {
 	// Draw title
 	title := "Marine Litter Survey - Keep Northern Ireland Beautiful"
 	ctx.Set("font", "bold "+strconv.FormatInt(int64(titleFontSize), 10)+"px serif")
-	titleMet := ctx.Call("measureText", title)
-	titleWidth := titleMet.Get("width").Float()
-	titleLeft := (displayWidth - int(titleWidth)) / 2
+	ctx.Set("textAlign", "center")
+	titleLeft := displayWidth / 2
 	ctx.Call("fillText", title, titleLeft, top+titleFontSize+20)
 
 	// Draw Y axis caption
@@ -172,18 +172,14 @@ func main() {
 	ctx.Set("font", "italic "+strconv.FormatInt(int64(axisCaptionFontSize), 10)+"px serif")
 	ctx.Set("fillStyle", "black")
 	ctx.Set("textAlign", "left")
-	ctx.Call("fillText", yAxisCaption, 0, -spinX+axisLeft-axisThickness-textGap-int(axisCaptionFontSize))
+	ctx.Call("fillText", yAxisCaption, 0, -spinX+axisLeft-textGap-int(axisCaptionFontSize)-30) // TODO: Figure out why 30 works well here, then autocalculate it for other graphs
 	ctx.Call("restore")
 
 	// Draw X axis caption
 	xAxisCaption := "Category"
 	ctx.Set("font", "italic "+strconv.FormatInt(int64(axisCaptionFontSize), 10)+"px serif")
-	capMet := ctx.Call("measureText", xAxisCaption)
-	capWidth := capMet.Get("width").Float()
-	capLeft := (displayWidth - int(capWidth)) / 2
+	capLeft := displayWidth / 2
 	ctx.Call("fillText", xAxisCaption, capLeft, barLabelY+textGap+axisCaptionFontSize)
-
-	// TODO: Add units of measurement
 
 	// Draw a border around the graph area
 	ctx.Set("lineWidth", "2")
