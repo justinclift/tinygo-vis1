@@ -51,6 +51,7 @@ func main() {
 	}
 
 	// Calculate the values used for controlling the graph positioning and display
+	axisCaptionFontSize := 20
 	axisThickness := 5
 	border := 2
 	gap := 2
@@ -60,12 +61,12 @@ func main() {
 	unitSize := 3
 	xCountFontSize := 18
 	xLabelFontSize := 20
-	yAxisCaptionFontSize := 16
 	top := border + gap
 	displayWidth := width - border - 1
 	displayHeight := height - border - 1
 	vertSize := highestVal * unitSize
 	baseLine := displayHeight - ((displayHeight - vertSize) / 2)
+	barLabelY := baseLine + xLabelFontSize + textGap + axisThickness + textGap
 	yBase := baseLine + axisThickness + textGap
 	yTop := baseLine - int(float64(vertSize)*1.2)
 	yLength := yBase - yTop
@@ -110,6 +111,7 @@ func main() {
 
 	rand.Seed(int64(time.Now().Nanosecond()))
 	hue := rand.Float64()
+
 	for label, num := range itemCounts {
 		barHeight := num * unitSize
 		hue += goldenRatioConjugate
@@ -130,7 +132,7 @@ func main() {
 		textMet := ctx.Call("measureText", label)
 		textWidth := textMet.Get("width").Float()
 		textLeft := (float64(barWidth) - textWidth) / 2
-		ctx.Call("fillText", label, barLeft+int(textLeft), baseLine+xLabelFontSize+textGap+axisThickness+textGap)
+		ctx.Call("fillText", label, barLeft+int(textLeft), barLabelY)
 
 		// Draw the item count centered above the top of the bar
 		ctx.Set("font", strconv.FormatInt(int64(xCountFontSize), 10)+"px serif")
@@ -150,7 +152,7 @@ func main() {
 	ctx.Call("lineTo", axisLeft-axisThickness-textGap, yTop)
 	ctx.Call("stroke")
 
-	// Add title
+	// Draw title
 	title := "Marine Litter Survey - Keep Northern Ireland Beautiful"
 	ctx.Set("font", "bold "+strconv.FormatInt(int64(titleFontSize), 10)+"px serif")
 	titleMet := ctx.Call("measureText", title)
@@ -158,7 +160,7 @@ func main() {
 	titleLeft := (displayWidth - int(titleWidth)) / 2
 	ctx.Call("fillText", title, titleLeft, top+titleFontSize+20)
 
-	// Add Y axis label
+	// Draw Y axis caption
 	// Info on how to rotate text on the canvas:
 	//   https://newspaint.wordpress.com/2014/05/22/writing-rotated-text-on-a-javascript-canvas/
 	spinX := displayWidth / 2
@@ -167,15 +169,21 @@ func main() {
 	ctx.Call("save")
 	ctx.Call("translate", spinX, spinY)
 	ctx.Call("rotate", 3*math.Pi/2)
-	ctx.Set("font", "bold "+strconv.FormatInt(int64(yAxisCaptionFontSize), 10)+"px serif")
+	ctx.Set("font", "italic "+strconv.FormatInt(int64(axisCaptionFontSize), 10)+"px serif")
 	ctx.Set("fillStyle", "black")
 	ctx.Set("textAlign", "left")
-	ctx.Call("fillText", yAxisCaption, 0, -spinX+axisLeft-axisThickness-textGap-int(yAxisCaptionFontSize))
+	ctx.Call("fillText", yAxisCaption, 0, -spinX+axisLeft-axisThickness-textGap-int(axisCaptionFontSize))
 	ctx.Call("restore")
 
-	// TODO: Add units of measurement
+	// Draw X axis caption
+	xAxisCaption := "Category"
+	ctx.Set("font", "italic "+strconv.FormatInt(int64(axisCaptionFontSize), 10)+"px serif")
+	capMet := ctx.Call("measureText", xAxisCaption)
+	capWidth := capMet.Get("width").Float()
+	capLeft := (displayWidth - int(capWidth)) / 2
+	ctx.Call("fillText", xAxisCaption, capLeft, barLabelY+textGap+axisCaptionFontSize)
 
-	// TODO: Adjust the grid lines to work with the unit of measurement
+	// TODO: Add units of measurement
 
 	// Draw a border around the graph area
 	ctx.Set("lineWidth", "2")
