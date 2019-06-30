@@ -1,12 +1,15 @@
 package main
 
 import (
-	"math"
 	"strconv"
 	"syscall/js"
 )
 
-const goldenRatioConjugate = 0.618033988749895
+const (
+	// 4 digits should be plenty for our purposes
+	goldenRatioConjugate = 0.6180
+	Pi  = 3.1415
+)
 
 func main() {}
 
@@ -69,11 +72,18 @@ func DrawBarChart(palette float32) {
 	yTop := baseLine - int(float64(vertSize)*1.2)
 	yLength := yBase - yTop
 
+	// TODO: Test integrating this with DBHub
+
+	// TODO: Calculate the graph height based upon the available size of the canvas, instead of using the current fixed unit size
+
+	// TODO: Calculate the font sizes based upon the whether they fit in their general space
+	//       We should be able to get the font size scaling down decently, without a huge effort
+
 	// Calculate the bar size, gap, and centering based upon the number of bars
 	numBars := len(itemCounts)
 	horizSize := displayWidth - (graphBorder * 2)
 	b := float64(horizSize) / float64(numBars)
-	barWidth := int(math.Round(b * 0.6))
+	barWidth := int(b * 0.6)
 	barGap := int(b - float64(barWidth))
 	barLeft := ((graphBorder * 2) + barGap) / 2
 	axisLeft := ((graphBorder * 2) + barGap) / 2
@@ -115,7 +125,7 @@ func DrawBarChart(palette float32) {
 	for label, num := range itemCounts {
 		barHeight := num * unitSize
 		hue += goldenRatioConjugate
-		hue = math.Mod(hue, 1)
+		hue = hue - float64(int(hue)) // Simplified version of "hue % 1"
 		ctx.Set("font", "bold "+strconv.FormatInt(int64(xLabelFontSize), 10)+"px serif")
 		ctx.Set("fillStyle", hsvToRgb(hue, 0.5, 0.95))
 		ctx.Call("beginPath")
@@ -163,7 +173,7 @@ func DrawBarChart(palette float32) {
 	yAxisCaption := "Number of items"
 	ctx.Call("save")
 	ctx.Call("translate", spinX, spinY)
-	ctx.Call("rotate", 3*math.Pi/2)
+	ctx.Call("rotate", 3*Pi/2)
 	ctx.Set("font", "italic "+strconv.FormatInt(int64(axisCaptionFontSize), 10)+"px serif")
 	ctx.Set("fillStyle", "black")
 	ctx.Set("textAlign", "left")
@@ -199,7 +209,7 @@ func DrawBarChart(palette float32) {
 
 // Ported from the JS here: https://martin.ankerl.com/2009/12/09/how-to-create-random-colors-programmatically/
 func hsvToRgb(h, s, v float64) string {
-	hi := math.Round(h * 6)
+	hi := h * 6
 	f := h*6 - hi
 	p := v * (1 - s)
 	q := v * (1 - f*s)
@@ -226,9 +236,9 @@ func hsvToRgb(h, s, v float64) string {
 		r, g, b = v, p, q
 	}
 
-	red := int(math.Round(r * 256))
-	green := int(math.Round(g * 256))
-	blue := int(math.Round(b * 256))
+	red := int(r * 256)
+	green := int(g * 256)
+	blue := int(b * 256)
 	return "rgb(" + strconv.FormatInt(int64(red), 10) + ", " + strconv.FormatInt(int64(green), 10) + ", " + strconv.FormatInt(int64(blue), 10) + ")"
 }
 
