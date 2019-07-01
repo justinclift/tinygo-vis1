@@ -16,10 +16,10 @@ func main() {}
 // DrawBarChart draws a simple bar chart, with a colour palette generated from the provided seed value
 //go:export DrawBarChart
 func DrawBarChart(palette float32) {
-	width := js.Global().Get("innerWidth").Int()
-	height := js.Global().Get("innerHeight").Int()
 	doc := js.Global().Get("document")
-	canvasEl := doc.Call("getElementById", "mycanvas")
+	canvasEl := doc.Call("getElementById", "barchart")
+	width := canvasEl.Get("clientWidth").Int()
+	height := canvasEl.Get("clientHeight").Int()
 	canvasEl.Call("setAttribute", "width", width)
 	canvasEl.Call("setAttribute", "height", height)
 	canvasEl.Set("tabIndex", 0) // Not sure if this is needed
