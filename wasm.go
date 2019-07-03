@@ -8,7 +8,7 @@ import (
 const (
 	// 4 digits should be plenty for our purposes
 	goldenRatioConjugate = 0.6180
-	Pi  = 3.1415
+	Pi                   = 3.1415
 )
 
 func main() {}
