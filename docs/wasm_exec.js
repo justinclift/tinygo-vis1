@@ -181,31 +181,37 @@
 
 			const timeOrigin = Date.now() - performance.now();
 			this.importObject = {
-				env: {
-					io_get_stdout: function() {
-						return 1;
-					},
-
-					resource_write: function(fd, ptr, len) {
+				wasi_unstable: {
+					// https://github.com/bytecodealliance/wasmtime/blob/master/docs/WASI-api.md#__wasi_fd_write
+					fd_write: function(fd, iovs_ptr, iovs_len, nwritten_ptr) {
+						let nwritten = 0;
 						if (fd == 1) {
-							for (let i=0; i<len; i++) {
-								let c = mem().getUint8(ptr+i);
-								if (c == 13) { // CR
-									// ignore
-								} else if (c == 10) { // LF
-									// write line
-									let line = decoder.decode(new Uint8Array(logLine));
-									logLine = [];
-									console.log(line);
-								} else {
-									logLine.push(c);
+							for (let iovs_i=0; iovs_i<iovs_len;iovs_i++) {
+								let iov_ptr = iovs_ptr+iovs_i*8; // assuming wasm32
+								let ptr = mem().getUint32(iov_ptr + 0, true);
+								let len = mem().getUint32(iov_ptr + 4, true);
+								for (let i=0; i<len; i++) {
+									let c = mem().getUint8(ptr+i);
+									if (c == 13) { // CR
+										// ignore
+									} else if (c == 10) { // LF
+										// write line
+										let line = decoder.decode(new Uint8Array(logLine));
+										logLine = [];
+										console.log(line);
+									} else {
+										logLine.push(c);
+									}
 								}
 							}
 						} else {
 							console.error('invalid file descriptor:', fd);
 						}
+						mem().setUint32(nwritten_ptr, nwritten, true);
+						return 0;
 					},
-
+				},
+				env: {
 					// func ticks() float64
 					"runtime.ticks": () => {
 						return timeOrigin + performance.now();
@@ -245,9 +251,9 @@
 					},
 
 					// valueSetIndex(v ref, i int, x ref)
-					//"syscall/js.valueSetIndex": (sp) => {
-					//	Reflect.set(loadValue(sp + 8), getInt64(sp + 16), loadValue(sp + 24));
-					//},
+					"syscall/js.valueSetIndex": (v_addr, i, x_addr) => {
+						Reflect.set(loadValue(v_addr), i, loadValue(x_addr));
+					},
 
 					// func valueCall(v ref, m string, args []ref) (ref, bool)
 					"syscall/js.valueCall": (ret_addr, v_addr, m_ptr, m_len, args_ptr, args_len, args_cap) => {
@@ -265,17 +271,17 @@
 					},
 
 					// func valueInvoke(v ref, args []ref) (ref, bool)
-					//"syscall/js.valueInvoke": (sp) => {
-					//	try {
-					//		const v = loadValue(sp + 8);
-					//		const args = loadSliceOfValues(sp + 16);
-					//		storeValue(sp + 40, Reflect.apply(v, undefined, args));
-					//		mem().setUint8(sp + 48, 1);
-					//	} catch (err) {
-					//		storeValue(sp + 40, err);
-					//		mem().setUint8(sp + 48, 0);
-					//	}
-					//},
+					"syscall/js.valueInvoke": (ret_addr, v_addr, args_ptr, args_len, args_cap) => {
+						try {
+							const v = loadValue(v_addr);
+							const args = loadSliceOfValues(args_ptr, args_len, args_cap);
+							storeValue(ret_addr, Reflect.apply(v, undefined, args));
+							mem().setUint8(ret_addr + 8, 1);
+						} catch (err) {
+							storeValue(ret_addr, err);
+							mem().setUint8(ret_addr + 8, 0);
+						}
+					},
 
 					// func valueNew(v ref, args []ref) (ref, bool)
 					"syscall/js.valueNew": (ret_addr, v_addr, args_ptr, args_len, args_cap) => {
@@ -313,6 +319,25 @@
 					//"syscall/js.valueInstanceOf": (sp) => {
 					//	mem().setUint8(sp + 24, loadValue(sp + 8) instanceof loadValue(sp + 16));
 					//},
+
+					// copyBytesToJS(dst ref, src []byte) (int, bool)
+					// Originally copied from upstream Go project, then modified:
+					//   https://github.com/golang/go/blob/3f995c3f3b43033013013e6c7ccc93a9b1411ca9/misc/wasm/wasm_exec.js#L404-L416
+					"syscall/js.copyBytesToJS": (ret_addr, dest_addr, source_addr, source_len, source_cap) => {
+						let num_bytes_copied_addr = ret_addr;
+						let returned_status_addr = ret_addr + 4; // Address of returned boolean status variable
+
+						const dst = loadValue(dest_addr);
+						const src = loadSlice(source_addr, source_len);
+						if (!(dst instanceof Uint8Array)) {
+							mem().setUint8(returned_status_addr, 0); // Return "not ok" status
+							return;
+						}
+						const toCopy = src.subarray(0, dst.length);
+						dst.set(toCopy);
+						setInt64(num_bytes_copied_addr, toCopy.length);
+						mem().setUint8(returned_status_addr, 1); // Return "ok" status
+					},
 				}
 			};
 		}
@@ -326,7 +351,6 @@
 				true,
 				false,
 				global,
-				this._inst.exports.memory,
 				this,
 			];
 			this._refs = new Map();
@@ -344,7 +368,7 @@
 						setTimeout(resolve, 0); // make sure it is asynchronous
 					};
 				});
-				this._inst.exports.cwa_main();
+				this._inst.exports._start();
 				if (this.exited) {
 					break;
 				}
